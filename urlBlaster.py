@@ -62,6 +62,14 @@ def get_dances():
 		dance_count = userDance
 	return int(dance_count)	
 
+def get_loops():
+	userLoops = raw_input("\nDid you want to run this once, or loop it some? Enter loops: [1] ")
+	if not userLoops:
+		loops_count = 1
+	else: 
+		loops_count = userLoops
+	return int(loops_count)		
+
 def get_urls(count):
 	urls = 1
 	urlCount = 0
@@ -171,7 +179,7 @@ def main():
 	userUrls = get_url_count()
 	urls = get_urls(int(userUrls))
 	countUrls = len(urls)
-	print "\n"+str(countUrls), "were grabbed."
+	print "\n"+str(countUrls), " grabbed."
 
 	print "\nResolving DNS for IP address..."
 	domainsIps = resolve_ips(urls)
@@ -182,12 +190,14 @@ def main():
 	print "\nEverything *should* be ready... "
 	userSend = raw_input("Type 'SYN' to send SYNs only or '3' to send full 3-way: ")
 	
-	loopCount = get_dances()
+	danceCount = get_dances()
+	loopCount = get_loops()
 
 	if userSend == 'SYN' or userSend == 'syn': 
 		print 'FIRING SYN!'
-		for i in range (loopCount): 
-			send_synpacket(domainsIps, srcip, sport,i)
+		for i in range (loopCount):
+			for i in range (danceCount): 
+				send_synpacket(domainsIps, srcip, sport,i)
 		niceExit()
 	if userSend == '3': 
 		print 'FIRING THE THREE WAY!'
