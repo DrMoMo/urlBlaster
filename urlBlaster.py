@@ -2,6 +2,7 @@
 #TODO:
 #Fix the scapy three way 
 #Allow you to set an interface
+#Add a loop to allow for 'relaunching'
 
 from scapy.all import *
 import os, pycurl, linecache, re, urllib2, socket, fcntl, struct, time, StringIO
