@@ -1,11 +1,10 @@
 #!/usr/bin/python
 #TODO:
 #Fix the scapy three way 
-#Fix the URL set overflow
 #Allow you to set an interface
 
 from scapy.all import *
-import os, pycurl, linecache, re, urllib2, socket, fcntl, struct, time
+import os, pycurl, linecache, re, urllib2, socket, fcntl, struct, time, StringIO
 
 dictionaryFile = 'dict.txt' #dictionary file
 iface = 'eth0' #perfered interface
@@ -70,25 +69,38 @@ def get_urls(count):
 	if count > 100:
 		print str(count) +"!?!? You're a MAD MAN, I have to throttle this . . . sorry."
 
-	while count >= urlCount:
+	while urlCount < count:
 
 		if count > 100:
-		  time.sleep(3)
+			time.sleep(3)
 
 		dictLine = linecache.getline('dict.txt', urls)
 		#print 'Fetching:', searchEngine + dictLine
 
 		req = urllib2.Request(searchEngine + dictLine)
 		resp = urllib2.urlopen(req)
-		html = resp.read()
+		data = resp.read()
+
+		if resp.headers.get('content-encoding', '') == 'gizp':
+			data = StringIO.StringIO(data)
+			gzipper = gzip.GzipFile(fileobj=data)
+			html = gzipper.read()
+		else:
+			html = data
 
 		results |= set(re.findall(r'www\.[^.]{2,}\.com', html))
 
 		urls = urls + 1
 		urlCount = len(results)
 		print urlCount, "of", count
+
+	if urlCount > count:
+		print "\nParsed",urlCount,"URLs. The last", urlCount - count, "will be dropped."
 	
-	#results = list(results)[:count]
+		while urlCount > count:
+			results.pop()
+			urlCount = len(results)
+
 	return results
 
 def resolve_ips(domains):
@@ -136,7 +148,8 @@ def send_packet(domain_to_ip, srcip, sp):
 
 def niceExit():
 	print "\nThe script has finished, however it's going to sleep for a bit while the server continues to comunicate."
-	print "If you want, you can CTRL+C out -- just remember you will need to run iptables --flush OUTPUT to clear your iptables."
+	print "If you want, you can CTRL+C out -- just remember you will need to run:"
+	print "iptables --flush OUTPUT to clear your iptables."
 	time.sleep(60)
 	os.system("iptables --flush OUTPUT")
 	exit()
@@ -147,8 +160,9 @@ def niceExit():
 def main():
 	os.system('clear')
 	print "      __           __             __  ___  ___  __  \n|  | |__) |       |__) |     /\  /__`  |  |__  |__) \n\__/ |  \ |___    |__) |___ /~~\ .__/  |  |___ |  \ \n\n"
-	print "This srcipt contains *NO* error checkings, your on your own...don't slip!\n"
-	
+	print "This srcipt contains *NO* error checkings, your on your own...don't slip!"
+	print "ALSO -- use sudo...\n"
+
 	srcip = get_srcip()
 	sport = get_sport()
 	dictFile = get_dict()
@@ -156,7 +170,7 @@ def main():
 	userUrls = get_url_count()
 	urls = get_urls(int(userUrls))
 	countUrls = len(urls)
-	print "\n"+str(countUrls), "were grabbed.  This number may be over, its a lazy bug."
+	print "\n"+str(countUrls), "were grabbed."
 
 	print "\nResolving DNS for IP address..."
 	domainsIps = resolve_ips(urls)
