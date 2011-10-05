@@ -1,1 +1,26 @@
-Nothing here ... waa waa
+urlBlaster.py is a script designed to do the following:
+Accept a user defined source ip address
+Accept a user defined source port
+
+The script then, using a dictionary file, starts to generate www urls
+according to a quantity you set. The script parses hotbot search results
+in order to obtain the urls at somewhat random.
+
+ It then performs a DNS lookup to get
+the server's ip address which will serve as a destination ip address.
+
+Once the data has been collected, using the scapy library, syn or 
+HTTP GET requests (still working on the GETs) will be sent to those
+destination ips for a duration of iteration you specify. 
+
+The script also makes iptable rules in order to prevent the O/S from
+sending RST packets
+
+In the beginning of the script the most important varible to set is
+your interface.
+
+In order to prevent bottlenecking your traffic with SYNACKs coming back
+I sugguest setting the source IP to a neighbor's.
+
+enjoy,
+JC

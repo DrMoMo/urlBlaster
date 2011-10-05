@@ -1,7 +1,7 @@
 #!/usr/bin/python
 #TODO:
 #Fix the scapy three way 
-#Allow you to set an interface
+#Allow you to set an interface / adjust to scapy
 #Add a loop to allow for 'relaunching'
 
 from scapy.all import *
