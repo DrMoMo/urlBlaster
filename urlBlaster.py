@@ -81,7 +81,7 @@ def get_urls(count):
 		resp = urllib2.urlopen(req)
 		data = resp.read()
 
-		if resp.headers.get('content-encoding', '') == 'gizp':
+		if resp.headers.get('content-encoding', '') == 'gzip':
 			data = StringIO.StringIO(data)
 			gzipper = gzip.GzipFile(fileobj=data)
 			html = gzipper.read()
