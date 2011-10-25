@@ -2,7 +2,7 @@
 #TODO:
 #Fix the scapy three way 
 #Allow you to set an interface / adjust to scapy
-#Add a loop to allow for 'relaunching'
+
 
 from scapy.all import *
 import os, pycurl, linecache, re, urllib2, socket, fcntl, struct, time, StringIO
@@ -81,13 +81,11 @@ def get_urls(count):
 	while urlCount < count:
 
 		if count > 100:
-			time.sleep(3)
+			time.sleep(1)
 
 		dictLine = linecache.getline('dict.txt', urls)
-		#print 'Fetching:', searchEngine + dictLine
 
 		try:
-
 			req = urllib2.Request(searchEngine + dictLine)
 			resp = urllib2.urlopen(req)
 			data = resp.read()
@@ -101,14 +99,16 @@ def get_urls(count):
 				html = data
 
 			results |= set(re.findall(r'www\.[^.]{2,}\.com', html))
+			results |= set(re.findall(r'www\.[^.]{2,}\.net', html))
+			results |= set(re.findall(r'www\.[^.]{2,}\.org', html))
 			
 			urlCount = len(results)
 			print urlCount, "of", count
 		
 		except:
 			print "Error trying to parse:",searchEngine + dictLine, " --Resuming..."
-	
-	urls = urls + 1
+			
+		urls = urls + 1
 
 	if urlCount > count:
 		print "\nParsed",urlCount,"URLs. The last", urlCount - count, "will be dropped."
@@ -123,12 +123,11 @@ def resolve_ips(domains):
 	domain_to_ip = {}
 
 	for domain in domains:
-
 		try:
 			domainIP = socket.gethostbyname_ex(domain)
 			domain_to_ip[domainIP[2][0]] = domain
 		except:
-			print "DNS Lookup failed for:", domain
+			print "DNS lookup failed for:", domain
 	
 	return domain_to_ip
 
