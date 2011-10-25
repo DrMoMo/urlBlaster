@@ -39,7 +39,7 @@ def get_dict():
 	return dictFile 
 
 def get_sport():
-	userSport = raw_input("Enter the dictionary path: ["+ sourcePort +"] ")
+	userSport = raw_input("Enter the source port: ["+ sourcePort +"] ")
 	if not userSport:
 		sport = sourcePort
 	else: 
@@ -86,22 +86,29 @@ def get_urls(count):
 		dictLine = linecache.getline('dict.txt', urls)
 		#print 'Fetching:', searchEngine + dictLine
 
-		req = urllib2.Request(searchEngine + dictLine)
-		resp = urllib2.urlopen(req)
-		data = resp.read()
+		try:
 
-		if resp.headers.get('content-encoding', '') == 'gzip':
-			data = StringIO.StringIO(data)
-			gzipper = gzip.GzipFile(fileobj=data)
-			html = gzipper.read()
-		else:
-			html = data
+			req = urllib2.Request(searchEngine + dictLine)
+			resp = urllib2.urlopen(req)
+			data = resp.read()
+			resp.close()
+			
+			if resp.headers.get('content-encoding', '') == 'gzip':
+				data = StringIO.StringIO(data)
+				gzipper = gzip.GzipFile(fileobj=data)
+				html = gzipper.read()
+			else:
+				html = data
 
-		results |= set(re.findall(r'www\.[^.]{2,}\.com', html))
-
-		urls = urls + 1
-		urlCount = len(results)
-		print urlCount, "of", count
+			results |= set(re.findall(r'www\.[^.]{2,}\.com', html))
+			
+			urlCount = len(results)
+			print urlCount, "of", count
+		
+		except:
+			print "Error trying to parse:",searchEngine + dictLine, " --Resuming..."
+	
+	urls = urls + 1
 
 	if urlCount > count:
 		print "\nParsed",urlCount,"URLs. The last", urlCount - count, "will be dropped."
@@ -117,8 +124,11 @@ def resolve_ips(domains):
 
 	for domain in domains:
 
-		domainIP = socket.gethostbyname_ex(domain)
-		domain_to_ip[domainIP[2][0]] = domain
+		try:
+			domainIP = socket.gethostbyname_ex(domain)
+			domain_to_ip[domainIP[2][0]] = domain
+		except:
+			print "DNS Lookup failed for:", domain
 	
 	return domain_to_ip
 
@@ -139,20 +149,22 @@ def send_synpacket(domain_to_ip, srcip, sp, i):
 		TCP_SYN=TCP(sport=spI, dport=80, flags="S", seq=100)
 		send(ip/TCP_SYN)
 
-def send_packet(domain_to_ip, srcip, sp):
+def send_packet(domain_to_ip, srcip, sp, i):
 	
 	for dstip, domain in domain_to_ip.iteritems():
 
+		spI = int(sp + i)
+
 		ip=IP(src=srcip, dst=dstip)
-		TCP_SYN=TCP(sport=sp, dport=80, flags="S", seq=100)
+		TCP_SYN=TCP(sport=spI, dport=80, flags="S", seq=100)
 		TCP_SYNACK=sr1(ip/TCP_SYN)
 
 		my_ack = TCP_SYNACK.seq + 1
-		TCP_ACK=TCP(sport=sp, dport=80, flags="A", seq=101, ack=my_ack)
-		send(ip/TCP_ACK)
+		TCP_ACK=TCP(sport=spI, dport=80, flags="A", seq=101, ack=my_ack)
+		sr1(ip/TCP_ACK)
 
-		my_payload="GET / HTTP/1.0\r\nHost: "+domain+"\r\n"
-		TCP_PUSH=TCP(sport=sp, dport=80, flags="PA", seq=102, ack=my_ack)
+		my_payload="GET / HTTP/1.0\r\nHost: "+domain+"\r\n\r\n"
+		TCP_PUSH=TCP(sport=spI, dport=80, flags="PA", seq=101, ack=my_ack)
 		send(ip/TCP_PUSH/my_payload)
 
 def niceExit():
@@ -201,7 +213,9 @@ def main():
 		niceExit()
 	if userSend == '3': 
 		print 'FIRING THE THREE WAY!'
-		send_synpacket(domainsIps, srcip, sport)
+		for i in range (loopCount):
+			for i in range (danceCount): 
+				send_synpacket(domainsIps, srcip, sport,i)
 		niceExit()		
 	else:
 		print "Something else was pressed, exiting ..."
